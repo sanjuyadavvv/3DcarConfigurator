@@ -1,7 +1,10 @@
 import { useGLTF } from "@react-three/drei";
+import {useEffect,useRef} from "react";
+import * as THREE from "three";
 
 function Car({ color, wheelColor,glassColor }) {
   const { scene } = useGLTF("/models/car.glb");
+  const groupRef = useRef();
 
   const body = scene.getObjectByName(
     "Lamborghini_Aventador_Body"
@@ -74,12 +77,27 @@ if (glass) {
   glass.material.needsUpdate = true;
 }
 
+
+  useEffect(() => {
+    const box = new THREE.Box3().setFromObject(scene);
+    const size = new THREE.Vector3();
+    const center = new THREE.Vector3();
+    box.getSize(size);
+    box.getCenter(center);
+    console.log("Model size:", size);   // how big the car actually is
+    console.log("Model center:", center); // where its middle actually is
+  }, [scene]);
+
+
   return (
+
+    <group  ref={groupRef} scale={0.01}>
     <primitive
       object={scene}
       scale={1}
       position={[0, 0, 0]}
     />
+    </group>
   );
 }
 

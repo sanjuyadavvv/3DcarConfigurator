@@ -71,3 +71,21 @@ body {
 .price-section h2 {
   margin-top: 15px;
 }
+
+.view-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.view-options button {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  background: #eee;
+}
+
+.view-options button:hover {
+  background: #ddd;
+}
