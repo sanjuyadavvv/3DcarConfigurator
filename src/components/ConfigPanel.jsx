@@ -114,96 +114,58 @@ function ConfigPanel({
 
       <div className="view-options">
 
-        <button onClick={() => setConfiguration(prev => ({
-          ...prev,
-          view: "front"
-        }))}>
-          Front
-        </button>
+<button
+  onClick={() =>
+    setConfiguration((prev) => ({
+      ...prev,
+      doorOpen: !prev.doorOpen,
+    }))
+  }
+>
+  {configuration.doorOpen
+    ? "Close Door"
+    : "Open Door"}
+</button>
 
-        <button onClick={() => setConfiguration(prev => ({
-          ...prev,
-          view: "side"
-        }))}>
-          Side
-        </button>
+<button
+  onClick={() =>
+    setConfiguration((prev) => ({
+      ...prev,
+      hoodOpen: !prev.hoodOpen,
+    }))
+  }
+>
+  {configuration.hoodOpen
+    ? "Close Hood"
+    : "Open Hood"}
+</button>
 
-        <button onClick={() => setConfiguration(prev => ({
-          ...prev,
-          view: "rear"
-        }))}>
-          Rear
-        </button>
+<button
+  onClick={() =>
+    setConfiguration((prev) => ({
+      ...prev,
+      trunkOpen: !prev.trunkOpen,
+    }))
+  }
+>
+  {configuration.trunkOpen
+    ? "Close Trunk"
+    : "Open Trunk"}
+</button>
 
-        <button onClick={() => setConfiguration(prev => ({
-          ...prev,
-          view: "top"
-        }))}>
-          Top
-        </button>
-
-        <button onClick={() => setConfiguration(prev => ({
-          ...prev,
-          view: "default"
-        }))}>
-          Reset
-        </button>
-
-      </div>
-
-
- <button
-        onClick={() =>
-          setConfiguration((prev) => ({
-            ...prev,
-            doorOpen: !prev.doorOpen,
-          }))
-        }
-      >
-        {configuration.doorOpen
-          ? "Close Door"
-          : "Open Door"}
-      </button>
-
-      <button
-        onClick={() =>
-          setConfiguration((prev) => ({
-            ...prev,
-            hoodOpen: !prev.hoodOpen,
-          }))
-        }
-      >
-        {configuration.hoodOpen
-          ? "Close Hood"
-          : "Open Hood"}
-      </button>
-
-      <button
-        onClick={() =>
-          setConfiguration((prev) => ({
-            ...prev,
-            trunkOpen: !prev.trunkOpen,
-          }))
-        }
-      >
-        {configuration.trunkOpen
-          ? "Close Trunk"
-          : "Open Trunk"}
-      </button>
-
-      <button
-        onClick={() =>
-          setConfiguration((prev) => ({
-            ...prev,
-            roofOpen: !prev.roofOpen,
-          }))
-        }
-      >
-        {configuration.roofOpen
-          ? "Close Roof"
-          : "Open Roof"}
-      </button>
-      
+<button
+  onClick={() =>
+    setConfiguration((prev) => ({
+      ...prev,
+      roofOpen: !prev.roofOpen,
+    }))
+  }
+>
+  {configuration.roofOpen
+    ? "Close Roof"
+    : "Open Roof"}
+</button>
+</div>
 
 <h3 className="section-title">
        Paint Finish
