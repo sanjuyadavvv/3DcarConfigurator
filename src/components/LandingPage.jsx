@@ -1,12 +1,12 @@
-import { Suspense, useState } from "react";
+import { Suspense } from "react";
 import { Canvas } from "@react-three/fiber";
 import { Environment } from "@react-three/drei";
 import { useNavigate } from "react-router-dom";
 import Car from "./Car";
+import LoadingScreen from "./LoadingScreen";
 
 function LandingPage() {
   const navigate = useNavigate();
-  const [bounds, setBounds] = useState(null);
 
   return (
     <div className="app">
@@ -22,7 +22,6 @@ function LandingPage() {
                 // wheelColor="#c0c0c0"
                 // glassColor="#87ceeb"
                 paintType="glossy"
-                onBoundsChange={setBounds}
                 enableEntranceAnimation={true}
               />
             </Suspense>
@@ -50,7 +49,7 @@ function LandingPage() {
           <h2>BUILT TO<br />BE UNFORGETTABLE.</h2>
           <p>Discover the design, performance and engineering behind the XJ220.</p>
 
-          <button className="explore-button" onClick={() => navigate("/configure/exterior")}>
+          <button className="explore-button" onClick={() => navigate("/configure")}>
             CONFIGURE YOUR XJ220
           </button>
         </div>
