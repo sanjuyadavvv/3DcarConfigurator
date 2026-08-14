@@ -2,7 +2,6 @@ import { useGLTF } from "@react-three/drei";
 import { useThree } from "@react-three/fiber";
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
-import gsap from "gsap";
 
 function Car({
   color,
@@ -14,27 +13,60 @@ function Car({
   trunkOpen,
   roofOpen,
   onBoundsChange,
-  enableEntranceAnimation = false,
   lightsOn = false,
+  groundY = 0,
+   revealWhenReady = false,
 }) {
   const { scene } = useGLTF("/models/car3.glb");
-  const { viewport } = useThree();
+  const { gl } = useThree();
 
   const modelRef = useRef();
   const innerRef = useRef();
   const carGroupRef = useRef();
 
-  const frontLightPosRef = useRef([]);
-  const spotLightRefs = useRef([]);
-  const targetRefs = useRef([]);
-  const headlightsRef = useRef();
   const [ready, setReady] = useState(false);
+  const [frontLightPositions, setFrontLightPositions] = useState([]);
+  const [carSize, setCarSize] = useState(null);
+  const [groupY, setGroupY] = useState(groundY);
 
-  // ---- ONE-TIME DEBUG: log every mesh + material name in the GLB ----
-  // Open your browser console, reload, and copy what this prints —
-  // send it back to me so I can wire up real color targeting.
+  const dragState = useRef({ dragging: false, lastX: 0 });
+
+  useEffect(() => {
+    const canvas = gl.domElement;
+
+    const onPointerDown = (e) => {
+      dragState.current.dragging = true;
+      dragState.current.lastX = e.clientX;
+    };
+
+    const onPointerMove = (e) => {
+      if (!dragState.current.dragging || !carGroupRef.current) return;
+
+      const deltaX = e.clientX - dragState.current.lastX;
+      dragState.current.lastX = e.clientX;
+
+      const ROTATE_SPEED = 0.005;
+      carGroupRef.current.rotation.y += deltaX * ROTATE_SPEED;
+    };
+
+    const onPointerUp = () => {
+      dragState.current.dragging = false;
+    };
+
+    canvas.addEventListener("pointerdown", onPointerDown);
+    window.addEventListener("pointermove", onPointerMove);
+    window.addEventListener("pointerup", onPointerUp);
+
+    return () => {
+      canvas.removeEventListener("pointerdown", onPointerDown);
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerup", onPointerUp);
+    };
+  }, [gl]);
+
   useEffect(() => {
     if (!scene) return;
+
     console.log("=== GLB MESH DUMP ===");
     scene.traverse((child) => {
       if (child.isMesh) {
@@ -48,7 +80,17 @@ function Car({
     console.log("=== END DUMP ===");
   }, [scene]);
 
-  // Recenter the model inside innerRef so carGroupRef.position === car's world center
+  useEffect(() => {
+    if (!scene) return;
+
+    scene.traverse((child) => {
+      if (child.isMesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+      }
+    });
+  }, [scene]);
+
   useEffect(() => {
     if (!modelRef.current || !innerRef.current) return;
 
@@ -63,69 +105,28 @@ function Car({
       !isFinite(center.z) ||
       size.x === 0
     ) {
-      console.warn("Bounding box invalid — model may not be ready yet");
+      console.warn("Bounding box invalid - model may not be ready yet");
       return;
     }
 
     innerRef.current.position.set(-center.x, -center.y, -center.z);
     setReady(true);
+    setCarSize(size);
+    const nextGroupY = groundY + size.y / 2;
+    setGroupY(nextGroupY);
 
-    if (onBoundsChange) onBoundsChange({ center, size });
-  }, [scene]);
-
-  // Entrance animation — unchanged from yours
-  const hasEnteredRef = useRef(false);
-
-  useEffect(() => {
-    if (!ready || !carGroupRef.current || !modelRef.current) return;
-    if (hasEnteredRef.current) return;
-    hasEnteredRef.current = true;
-
-    const car = carGroupRef.current;
-
-    // Configurator page: just place it centered, skip the slide-in entirely
-    if (!enableEntranceAnimation) {
-      car.position.set(0, 0, 0);
-      car.rotation.y = Math.PI / 6; // starting angle, tweak to taste
-      car.scale.set(1, 1, 1);
-      return;
+    // Report the bounds as they'll be AFTER recentering/grounding above,
+    // not the raw pre-recenter world position — otherwise the camera
+    // (CameraController) aims at where the model used to sit and the car
+    // appears to jump the instant it becomes visible.
+    if (onBoundsChange) {
+      onBoundsChange({
+        center: new THREE.Vector3(0, nextGroupY, 0),
+        size,
+      });
     }
+  }, [scene, groundY, onBoundsChange]);
 
-    const box = new THREE.Box3().setFromObject(modelRef.current);
-    const size = box.getSize(new THREE.Vector3());
-    const halfWidth = size.x / 2;
-    const halfHeight = size.y / 2;
-
-    const screenHalfWidth = viewport.width / 2;
-    const screenHalfHeight = viewport.height / 2;
-
-    const bottomMargin = viewport.height * 0.06;
-    const groundY = -screenHalfHeight + bottomMargin + halfHeight;
-
-    const startX = screenHalfWidth + halfWidth + 1;
-    const edgeGap = 1.5;
-    const endX = -screenHalfWidth + halfWidth + edgeGap;
-
-    car.position.set(startX, groundY, 0);
-    car.rotation.y = -Math.PI / 2;
-    car.scale.set(1, 1, 1);
-
-    const timeline = gsap.timeline();
-    timeline.to(car.position, {
-      x: endX,
-      duration: 4,
-      delay: 0.5,
-      ease: "power2.inOut",
-    });
-
-    return () => timeline.kill();
-  }, [ready, enableEntranceAnimation]);
-
-  // ---- PLACEHOLDER color/paint application ----
-  // This runs but does nothing useful yet because I don't know your
-  // real mesh names — it's here so the wiring compiles and you can
-  // see it firing in the console. I'll replace the `includes()` checks
-  // once you send me the mesh dump above.
   useEffect(() => {
     if (!modelRef.current) return;
 
@@ -139,17 +140,17 @@ function Car({
           child.material = child.material.clone();
           child.userData.colorCloned = true;
         }
+
         const mat = child.material;
         mat.color.set(hex);
         if (opts.roughness !== undefined) mat.roughness = opts.roughness;
         if (opts.metalness !== undefined) mat.metalness = opts.metalness;
-        if ("clearcoat" in mat && opts.clearcoat !== undefined)
+        if ("clearcoat" in mat && opts.clearcoat !== undefined) {
           mat.clearcoat = opts.clearcoat;
+        }
         mat.needsUpdate = true;
       };
 
-      // BODY PAINT — the real exterior paint material, shared across
-      // doors, hood, fenders, mirrors, front light housing
       if (matName === "XJ220MI_1256010001_002" && color) {
         applyOnce(color, {
           metalness: paintType === "metallic" ? 0.9 : 0.3,
@@ -159,17 +160,13 @@ function Car({
         return;
       }
 
-      // WHEEL RIM — the actual chrome rim, NOT the caliper (phong1)
-      // and NOT the tire (Thick_Tire1)
       if (matName === "XJ220MI_Rim1" && wheelColor) {
         applyOnce(wheelColor, { roughness: 0.35, metalness: 0.8 });
         return;
       }
 
-      // GLASS — main windows only, not headlight lenses (Glass_Light1)
       if (matName === "XJ220MI_Glass1" && glassColor) {
         applyOnce(glassColor, { roughness: 0.05, metalness: 0 });
-        return;
       }
     });
   }, [color, wheelColor, glassColor, paintType]);
@@ -181,8 +178,8 @@ function Car({
       if (!child.isMesh || !child.material) return;
 
       const matName = child.material.name;
-      const isLightBody = matName === "XJ220MI_Light1"; // housing/lens plastic
-      const isLightGlass = matName === "XJ220MI_Glass_Light1"; // clear cover over the bulb
+      const isLightBody = matName === "XJ220MI_Light1";
+      const isLightGlass = matName === "XJ220MI_Glass_Light1";
 
       if (!isLightBody && !isLightGlass) return;
 
@@ -196,28 +193,24 @@ function Car({
       if (lightsOn) {
         mat.emissive = new THREE.Color(isLightGlass ? "#fff6d8" : "#ffcc66");
         mat.emissiveIntensity = isLightGlass ? 3 : 1.5;
+        mat.toneMapped = false;
       } else {
         mat.emissive = new THREE.Color("#000000");
         mat.emissiveIntensity = 0;
+        mat.toneMapped = true;
       }
 
       mat.needsUpdate = true;
     });
   }, [lightsOn]);
 
-  // ---- PLACEHOLDER door/hood/trunk/roof toggles ----
-  // Same story — needs real mesh/hierarchy names to actually rotate
-  // hinge groups. Send the dump and I'll fill this in properly.
   useEffect(() => {
     if (!modelRef.current) return;
-    // e.g. once we know the name:
-    // const door = modelRef.current.getObjectByName("Door_L");
-    // if (door) gsap.to(door.rotation, { y: doorOpen ? -1.2 : 0, duration: 0.6 });
+    // Door/hood/trunk/roof animation hooks stay here for future mesh naming.
   }, [doorOpen, hoodOpen, trunkOpen, roofOpen]);
 
-  // Locate front headlight world positions once the model is ready
   useEffect(() => {
-    if (!ready || !modelRef.current) return;
+    if (!ready || !modelRef.current || !carGroupRef.current) return;
 
     const positions = [];
 
@@ -227,74 +220,85 @@ function Car({
       if (child.name.includes("Light_F")) {
         const worldPos = new THREE.Vector3();
         child.getWorldPosition(worldPos);
-
-        // Convert world position into carGroup local space
         const localPos = carGroupRef.current.worldToLocal(worldPos);
-
         positions.push(localPos);
       }
     });
 
     const unique = [];
-
     positions.forEach((p) => {
       const duplicate = unique.find((u) => u.distanceTo(p) < 0.05);
-
-      if (!duplicate) {
-        unique.push(p.clone());
-      }
+      if (!duplicate) unique.push(p.clone());
     });
-
-    frontLightPosRef.current = unique;
 
     console.log("HEADLIGHT POSITIONS:", unique);
+    setFrontLightPositions(unique);
   }, [ready]);
 
-  // Toggle spotlight intensity with lightsOn (positions set via JSX below)
-  useEffect(() => {
-    spotLightRefs.current.forEach((light) => {
-      if (!light) return;
-      light.intensity = lightsOn ? 500 : 0;
-    });
-  }, [lightsOn, frontLightPosRef.current.length]);
-
   return (
-    <group ref={carGroupRef} position={[0, 2, 0]}>
+    <group ref={carGroupRef} position={[0, groupY, 0]}  visible={ready && revealWhenReady}>
       <group ref={innerRef}>
-        <primitive
-          ref={modelRef}
-          object={scene}
-          scale={100}
-          position={[0, 1, 0]}
-        />
+        <primitive ref={modelRef} object={scene} scale={100} position={[0, 1, 0]} />
       </group>
 
-      {frontLightPosRef.current.map((pos, i) => (
+      {frontLightPositions.map((pos, i) => (
         <group key={i}>
-          <object3D
-            ref={(el) => {
-              targetRefs.current[i] = el;
-            }}
-            position={[pos.x, pos.y - 0.1, pos.z + 8]}
-          />
-
-          <spotLight
-            ref={(el) => {
-              spotLightRefs.current[i] = el;
-            }}
-            position={[pos.x, pos.y, pos.z]}
-            target={targetRefs.current[i]}
-            angle={0.3}
-            penumbra={0.4}
-            distance={20}
-            decay={2}
-            intensity={lightsOn ? 500 : 0}
-            color="#fff8e8"
-            castShadow
+          <HeadlightBeam
+            pos={pos}
+            lightsOn={lightsOn}
+            groundY={carSize ? -carSize.y / 2 : pos.y - 1}
           />
         </group>
       ))}
     </group>
+  );
+}
+
+function HeadlightBeam({ pos, lightsOn, groundY }) {
+  const targetRef = useRef();
+  const spotRef = useRef();
+  const [targetReady, setTargetReady] = useState(false);
+
+  useEffect(() => {
+    if (targetRef.current) setTargetReady(true);
+  }, []);
+
+  useEffect(() => {
+    if (spotRef.current && targetRef.current) {
+      spotRef.current.target = targetRef.current;
+      spotRef.current.target.updateMatrixWorld();
+    }
+  }, [targetReady]);
+
+  const targetX = pos.x;
+  const targetY = groundY;
+  const targetZ = pos.z + 3;
+
+  return (
+    <>
+      <object3D
+        ref={(el) => {
+          targetRef.current = el;
+          if (el && !targetReady) setTargetReady(true);
+        }}
+        position={[targetX, targetY, targetZ]}
+      />
+
+      {targetReady && (
+        <spotLight
+          ref={spotRef}
+          position={[pos.x, pos.y, pos.z]}
+          target={targetRef.current}
+          angle={0.35}
+          penumbra={0.6}
+          distance={12}
+          decay={2}
+          intensity={lightsOn ? 300 : 0}
+          color="#fff8e8"
+          castShadow
+        />
+      )}
+    </>
   );
 }
 

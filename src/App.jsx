@@ -1,6 +1,5 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { ConfigProvider } from './components/context/ConfigContext.jsx'
-import LandingPage from './components/LandingPage.jsx'
 import ConfiguratorPage from './components/ConfiguratorPage.jsx'
 import "./App.css";
 
@@ -9,7 +8,8 @@ function App() {
     <ConfigProvider>
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<LandingPage />} />
+          <Route path="/" element={<Navigate to="/configure/exterior" replace />} />
+          <Route path="/configure" element={<Navigate to="/configure/exterior" replace />} />
           <Route path="/configure/:section" element={<ConfiguratorPage />} />
         </Routes>
       </BrowserRouter>

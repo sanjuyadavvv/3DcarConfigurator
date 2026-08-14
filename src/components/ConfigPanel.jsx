@@ -1,8 +1,7 @@
 import { useState } from "react";
 import SpectrumPicker from "./SpectrumPicker";
 
-function ConfigPanel({ section, configuration, setConfiguration }) {
-  // null = bar collapsed, no spectrum showing
+function ConfigPanel({ section, onSectionChange, configuration, setConfiguration }) {
   const [activeColorTarget, setActiveColorTarget] = useState(null);
   const [sliderPositions, setSliderPositions] = useState({ body: 0.14, wheels: 0 });
   const [showMore, setShowMore] = useState(false);
@@ -25,11 +24,38 @@ function ConfigPanel({ section, configuration, setConfiguration }) {
     { name: "Matte", value: "matte" },
   ];
 
+  const tabs = (
+    <div className="config-tabs" role="tablist" aria-label="Configurator sections">
+      <button
+        type="button"
+        role="tab"
+        aria-selected={section === "exterior"}
+        className={section === "exterior" ? "active" : ""}
+        onClick={() => onSectionChange("exterior")}
+      >
+        Exterior
+      </button>
+      <button
+        type="button"
+        role="tab"
+        aria-selected={section === "interior"}
+        className={section === "interior" ? "active" : ""}
+        onClick={() => onSectionChange("interior")}
+      >
+        Interior
+      </button>
+    </div>
+  );
+
   if (section === "interior") {
     return (
       <div className="bottom-bar-wrap">
-        <div className="bottom-bar">
-          <div className="bar-label">INTERIOR</div>
+        {tabs}
+        <div className="interior-card">
+          <div className="interior-card-title">INTERIOR</div>
+          <div className="interior-card-body">
+            <p>Interior customization coming soon.</p>
+          </div>
         </div>
       </div>
     );
@@ -37,7 +63,8 @@ function ConfigPanel({ section, configuration, setConfiguration }) {
 
   return (
     <div className="bottom-bar-wrap">
-      {/* Spectrum popup — only rendered when a color target is active */}
+      {tabs}
+
       {activeColorTarget && (
         <div className="spectrum-popup">
           <SpectrumPicker
@@ -47,9 +74,6 @@ function ConfigPanel({ section, configuration, setConfiguration }) {
         </div>
       )}
 
-      {/* Paint finish popup — not in the reference screenshot, added so
-          Glossy/Metallic/Matte has somewhere to live without cluttering
-          the main bar. Remove this block if you don't want it. */}
       {showMore && (
         <div className="more-popup">
           {paintTypes.map((p) => (
@@ -105,19 +129,17 @@ function ConfigPanel({ section, configuration, setConfiguration }) {
         </button>
 
         <button
-  className={`bar-icon ${configuration.lightsOn ? "active" : ""}`}
-  onClick={() =>
-    setConfiguration((prev) => ({ ...prev, lightsOn: !prev.lightsOn }))
-  }
-  title="Headlights"
->
-  <svg viewBox="0 0 24 24" width="18" height="18">
-    <path
-      fill="currentColor"
-      d="M9 18h6v1a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1v-1zm3-16a7 7 0 0 0-4 12.74V17h8v-2.26A7 7 0 0 0 12 2z"
-    />
-  </svg>
-</button>
+          className={`bar-icon ${configuration.lightsOn ? "active" : ""}`}
+          onClick={() => setConfiguration((prev) => ({ ...prev, lightsOn: !prev.lightsOn }))}
+          title="Headlights"
+        >
+          <svg viewBox="0 0 24 24" width="18" height="18">
+            <path
+              fill="currentColor"
+              d="M9 18h6v1a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1v-1zm3-16a7 7 0 0 0-4 12.74V17h8v-2.26A7 7 0 0 0 12 2z"
+            />
+          </svg>
+        </button>
       </div>
     </div>
   );

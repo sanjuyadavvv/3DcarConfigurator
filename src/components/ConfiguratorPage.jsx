@@ -1,54 +1,96 @@
-import { Suspense, useRef } from "react";
+import { Suspense, useRef, useState } from "react";
 import { Canvas } from "@react-three/fiber";
 import { Environment, OrbitControls } from "@react-three/drei";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
+import * as THREE from "three";
 import Car from "./Car";
+import CameraController from "./CameraController";
+import LoadingScreen from "./LoadingScreen";
 import { useConfig } from "./context/ConfigContext";
 import ConfigPanel from "./ConfigPanel";
+import Ground from "./Ground";
+import LightRig from "./LightRig";
+import { ContactShadows } from "@react-three/drei";
+import { useCallback } from "react";
+// The floor is a fixed plane at this world Y — it never moves. Car.jsx
+// measures the loaded model and positions itself so its wheels land
+// exactly here, instead of Ground chasing the car's position.
+const GROUND_Y = 0;
 
 function ConfiguratorPage() {
   const { section } = useParams();
-  const { configuration, setConfiguration } = useConfig(); // only this — remove the other useConfig() call
+  const navigate = useNavigate();
+  const { configuration, setConfiguration } = useConfig();
   const controlsRef = useRef();
+  const [bounds, setBounds] = useState(null);
+  const activeSection = section === "interior" ? "interior" : "exterior";
+
+  const [cameraReady, setCameraReady] = useState(false);
+const handleCameraReady = useCallback(() => setCameraReady(true), []);
+
+
 
   return (
-    <div className="configurator">
+    <div className="configurator-page">
       <div className="configurator-canvas">
-        <Canvas camera={{ fov: 45, near: 0.01, far: 1000, position: [0, 1.2, 4] }}>
-          <ambientLight intensity={0.4} />
-          <directionalLight position={[5, 5, 5]} intensity={2} />
-          <Environment preset="city" />
+        <Canvas
+          shadows
+          camera={{ fov: 40, near: 0.01, far: 1000, position: [0, 1.0, 4.2] }}
+          gl={{
+            toneMapping: THREE.ACESFilmicToneMapping,
+            toneMappingExposure: 0.9,
+          }}
+        >
+          <color attach="background" args={["#050505"]} />
+          <fog attach="fog" args={["#050505", 8, 22]} />
+          <ambientLight intensity={0.25} />
+          <Environment preset="city" environmentIntensity={0.35}  background={false} />
+          {/* <LightRig /> */}
 
-          <Suspense fallback={null}>
+          <Suspense fallback={<LoadingScreen />}>
             <Car
               color={configuration.bodyColor}
               wheelColor={configuration.wheelColor}
               glassColor={configuration.glassColor}
               paintType={configuration.paintType}
-              enableEntranceAnimation={false}
               lightsOn={configuration.lightsOn}
+              groundY={GROUND_Y}
+              onBoundsChange={setBounds}
+                 revealWhenReady={cameraReady}
             />
           </Suspense>
+
+       <CameraController
+  bounds={bounds}
+  controlsRef={controlsRef}
+   onReady={handleCameraReady}
+/>
 
           <OrbitControls
             ref={controlsRef}
             enablePan={false}
+            enableRotate={false}
             enableZoom={true}
             minDistance={2.5}
             maxDistance={6}
-            minPolarAngle={Math.PI / 3}
-            maxPolarAngle={Math.PI / 2.1}
-            minAzimuthAngle={-Math.PI / 2}
-            maxAzimuthAngle={Math.PI / 2}
-            enableDamping
-            dampingFactor={0.08}
+          />
+
+          <Ground y={GROUND_Y} />
+          <ContactShadows
+            position={[0, GROUND_Y + 0.01, 0]}
+            opacity={0.75}
+            scale={12}
+            blur={1.8}
+            far={3}
+            resolution={1024}
           />
         </Canvas>
       </div>
 
       <div className="configurator-bottom-bar">
         <ConfigPanel
-          section={section}
+          section={activeSection}
+          onSectionChange={(nextSection) => navigate(`/configure/${nextSection}`)}
           configuration={configuration}
           setConfiguration={setConfiguration}
         />

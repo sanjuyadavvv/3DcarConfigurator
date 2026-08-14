@@ -164,6 +164,8 @@ body {
   transform: translateX(-50%);
   z-index: 2;
   width: min(440px, 92vw);
+    backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 /* =========================================
@@ -317,6 +319,70 @@ body {
   flex-direction: column;
   align-items: center;
   gap: 10px;
+  width: min(440px, 92vw);
+}
+
+.config-tabs {
+  display: flex;
+  width: 100%;
+  padding: 6px;
+  gap: 6px;
+  background: rgba(10, 10, 10, 0.82);
+  backdrop-filter: blur(6px);
+  border: 1px solid #333;
+  border-radius: 999px;
+}
+
+.config-tabs button {
+  flex: 1;
+  min-height: 42px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: #999;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.config-tabs button:hover {
+  color: #fff;
+}
+
+.config-tabs button.active {
+  background: #fff;
+  color: #111;
+}
+
+.interior-card {
+  width: 100%;
+  padding: 20px 22px 22px;
+  background: rgba(10, 10, 10, 0.9);
+  backdrop-filter: blur(6px);
+  border: 1px solid #333;
+  border-radius: 12px;
+  text-align: center;
+}
+
+.interior-card-title {
+  margin-bottom: 16px;
+  font-size: 12px;
+  letter-spacing: 0.35em;
+  color: #fff;
+  opacity: 0.9;
+}
+
+.interior-card-body {
+  padding: 24px 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.interior-card-body p {
+  font-size: 15px;
+  line-height: 1.7;
+  color: #c7c7c7;
 }
 
 .bottom-bar {
@@ -422,6 +488,24 @@ body {
 
   .experience {
     padding: 30px;
+  }
+
+  .bottom-bar-wrap {
+    width: min(92vw, 440px);
+    bottom: 16px;
+  }
+
+  .config-tabs {
+    gap: 4px;
+  }
+
+  .config-tabs button {
+    font-size: 11px;
+    min-height: 40px;
+  }
+
+  .bottom-bar {
+    width: 100%;
   }
 
 }

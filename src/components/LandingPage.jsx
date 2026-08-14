@@ -15,8 +15,8 @@ function LandingPage() {
           <Canvas camera={{ fov: 45, near: 0.01, far: 1000 }}>
             <ambientLight intensity={0.4} />
             <directionalLight position={[5, 5, 5]} intensity={2} />
-            <Environment preset="city" />
-            <Suspense fallback={null}>
+            <Environment preset="city" background={false}/>
+            <Suspense fallback={<LoadingScreen />}>
               <Car
                 // color="#ff0000"
                 // wheelColor="#c0c0c0"
